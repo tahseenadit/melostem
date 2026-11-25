@@ -1,42 +1,44 @@
 /**
- * Audio engine: one input (a shared tab / whole-system audio, or a local file), three routes
- * that can be switched live, and one output feeding the speakers and the visualiser.
+ * Audio engine: one input (a shared tab / whole-system audio, or a local file) goes to the AI
+ * worker; the separated stems come back to the stem player, which mixes them with live
+ * per-instrument switches and feeds the speakers and the visualiser.
  *
- *   input ─┬─ original ────────────────┐
- *          ├─ instant (DSP splitter) ──┼─ out ─ analyser ─ speakers
- *          └─ tap → AI worker → stem player ┘
+ *   input ─ tap → AI worker → stem player ─ out ─ analyser ─ speakers
  */
 import tapUrl from './tap-processor.ts?worker&url';
 import playerUrl from './stem-player-processor.ts?worker&url';
-import instantUrl from './instant-processor.ts?worker&url';
 
-export type Mode = 'original' | 'instant' | 'ai';
 /** UI stem order. */
 export const STEM_NAMES = ['Vocals', 'Drums', 'Bass', 'Other'] as const;
 /** UI index -> HT-Demucs index (drums, bass, other, vocals). */
 const UI_TO_AI = [3, 0, 1, 2];
+/** Separation step in seconds; longer steps need less GPU power but add delay. */
+const STEPS = [2, 4, 6];
 
-export interface AiStatus { state: 'idle' | 'loading' | 'ready' | 'running' | 'error'; text: string; progress?: number; realtime?: number; latency?: number }
+export interface AiStatus {
+  state: 'loading' | 'ready' | 'running' | 'error';
+  text: string;
+  progress?: number;
+  /** how many times faster than the music the AI separates */
+  speed?: number;
+  /** seconds between the original sound and what you hear */
+  delay?: number;
+  buffering?: boolean;
+  slowedDown?: boolean;
+}
 
 export class Engine {
   readonly ac = new AudioContext({ sampleRate: 44100, latencyHint: 'playback' });
   readonly input = new GainNode(this.ac, { channelCount: 2, channelCountMode: 'explicit', channelInterpretation: 'speakers' });
   readonly out = new GainNode(this.ac);
   readonly analyser = new AnalyserNode(this.ac, { fftSize: 2048, smoothingTimeConstant: 0.25 });
-  mode: Mode = 'original';
   stems = [true, true, true, true];
-  instantLevels = [-120, -120, -120, -120];
-  aiLevels = [0, 0, 0, 0];
-  pitch = 0;
-  ai: AiStatus = { state: 'idle', text: 'AI model not loaded yet' };
+  levels = [0, 0, 0, 0];
+  ai: AiStatus = { state: 'loading', text: 'Getting the AI ready…', progress: 0 };
   onChange: () => void = () => {};
 
-  private gOrig = new GainNode(this.ac, { gain: 1 });
-  private gInst = new GainNode(this.ac, { gain: 0 });
-  private gAi = new GainNode(this.ac, { gain: 0 });
-  private instant: AudioWorkletNode[] = [];
-  private passes = 1;
-  private vmode = 0;
+  private step = 0;
+  private slowCount = 0;
   private tap?: AudioWorkletNode;
   private player?: AudioWorkletNode;
   private worker?: Worker;
@@ -45,33 +47,25 @@ export class Engine {
   private ready: Promise<void>;
 
   constructor() {
-    this.input.connect(this.gOrig).connect(this.out);
-    this.gInst.connect(this.out);
-    this.gAi.connect(this.out);
     this.out.connect(this.analyser);
     this.out.connect(this.ac.destination);
     this.ready = this.init();
   }
 
   private async init() {
-    await Promise.all([tapUrl, playerUrl, instantUrl].map((u) => this.ac.audioWorklet.addModule(u)));
-    const mk = () => new AudioWorkletNode(this.ac, 'inmusic-instant', { outputChannelCount: [2], channelCount: 2, channelCountMode: 'explicit' });
-    this.instant = [mk(), mk(), mk()];
-    this.input.connect(this.instant[0]);
-    this.instant[0].port.onmessage = (e) => {
-      const d = e.data;
-      if (d.p != null) { for (const x of this.instant.slice(1)) x.port.postMessage({ p: d.p }); }
-      else if (d.lv) { this.instantLevels = d.lv; this.pitch = d.f0; }
-    };
-    this.chainInstant();
+    await Promise.all([tapUrl, playerUrl].map((u) => this.ac.audioWorklet.addModule(u)));
     this.tap = new AudioWorkletNode(this.ac, 'inmusic-tap', { numberOfOutputs: 0 });
     this.input.connect(this.tap);
     this.player = new AudioWorkletNode(this.ac, 'inmusic-stem-player', { numberOfInputs: 0, outputChannelCount: [2] });
-    this.player.connect(this.gAi);
+    this.player.connect(this.out);
     this.player.port.onmessage = (e) => {
-      if (e.data.type === 'level') { this.aiLevels = e.data.rms; if (this.ai.state === 'running') this.ai.text = e.data.playing ? 'AI separating live' : 'AI buffering…'; }
+      if (e.data.type !== 'level') return;
+      this.levels = UI_TO_AI.map((a) => e.data.rms[a]);
+      const buffering = !e.data.playing && !!this.source;
+      if (buffering !== this.ai.buffering) { this.ai = { ...this.ai, buffering }; this.onChange(); }
     };
     this.sendStems();
+    this.loadAi();
   }
 
   // ---------- sources ----------
@@ -79,8 +73,8 @@ export class Engine {
     await this.ready; await this.ac.resume();
     const stream = await navigator.mediaDevices.getDisplayMedia({
       video: true,
-      // Chrome: lets the user pick a tab, a window or the entire screen with system audio,
-      // and mutes the tab's own playback so only our processed sound is heard.
+      // Chrome: pick a tab, a window or the entire screen with system audio. The tab's own
+      // playback is muted so only the processed sound is heard.
       audio: { suppressLocalAudioPlayback: true, echoCancellation: false, noiseSuppression: false, autoGainControl: false } as MediaTrackConstraints,
       systemAudio: 'include',
       selfBrowserSurface: 'exclude',
@@ -110,54 +104,23 @@ export class Engine {
     this.source?.disconnect();
     this.stream?.getTracks().forEach((t) => t.stop());
     this.source = undefined; this.stream = undefined;
+    this.restartAi();
     this.onChange();
   }
 
   get hasSource() { return !!this.source; }
 
-  // ---------- modes and stems ----------
-  setMode(m: Mode) {
-    this.mode = m;
-    const t = this.ac.currentTime;
-    this.gOrig.gain.setTargetAtTime(m === 'original' ? 1 : 0, t, 0.03);
-    this.gInst.gain.setTargetAtTime(m === 'instant' ? 1 : 0, t, 0.03);
-    this.gAi.gain.setTargetAtTime(m === 'ai' ? 1 : 0, t, 0.03);
-    this.onChange();
-  }
-
+  // ---------- instruments ----------
   setStem(i: number, on: boolean) { this.stems[i] = on; this.sendStems(); this.onChange(); }
 
-  setInstantOptions(o: { vmode?: number; passes?: number }) {
-    if (o.vmode != null) this.vmode = o.vmode;
-    if (o.passes != null) { this.passes = o.passes; this.chainInstant(); }
-    this.sendStems();
-  }
-
-  private chainInstant() {
-    if (!this.instant.length) return;
-    for (const n of this.instant) n.disconnect();
-    const list = this.instant.slice(0, 1 + this.passes);
-    for (let i = 0; i < list.length - 1; i++) list[i].connect(list[i + 1]);
-    list[list.length - 1].connect(this.gInst);
-  }
-
   private sendStems() {
-    const on = this.stems.map((v) => (v ? 1 : 0));
-    this.instant[0]?.port.postMessage({ stems: on, vmode: this.vmode });
-    this.instant.slice(1).forEach((n, i) => n.port.postMessage({ stems: [on[0], 1, 1, 1], vmode: 2, lag: 9 * (i + 1) }));
     const g = [0, 0, 0, 0];
-    on.forEach((v, ui) => (g[UI_TO_AI[ui]] = v));
+    this.stems.forEach((v, ui) => (g[UI_TO_AI[ui]] = v ? 1 : 0));
     this.player?.port.postMessage({ gains: g });
   }
 
-  /** AI stem levels in UI order. */
-  get aiLevelsUi() { return UI_TO_AI.map((a) => this.aiLevels[a]); }
-
   // ---------- AI ----------
-  async loadAi(opts: { hop?: number; margin?: number; base?: string } = {}) {
-    await this.ready;
-    if (this.worker) return;
-    this.ai = { state: 'loading', text: 'Downloading the AI model…', progress: 0 }; this.onChange();
+  private loadAi() {
     const w = new Worker(new URL('../ai/separator.worker.ts', import.meta.url), { type: 'module' });
     this.worker = w;
     const tapCh = new MessageChannel(), playCh = new MessageChannel();
@@ -168,28 +131,41 @@ export class Engine {
       const d = e.data;
       if (d.type === 'progress') {
         this.ai = d.phase === 'download'
-          ? { state: 'loading', text: `Downloading the AI model: ${(d.done / 1e6).toFixed(0)} MB`, progress: Math.min(0.95, d.done / d.total) }
-          : { state: 'loading', text: `Preparing the AI on your graphics card (${d.done}/${d.total})`, progress: 0.95 + 0.05 * (d.done / d.total) };
+          ? { state: 'loading', text: d.cached ? 'Loading the AI from your browser…' : `Downloading the AI (first time only): ${(d.done / 1e6).toFixed(0)} of about ${(d.total / 1e6).toFixed(0)} MB`, progress: Math.min(0.95, d.done / d.total) }
+          : { state: 'loading', text: 'Preparing the AI on your graphics card…', progress: 0.95 + 0.05 * (d.done / d.total) };
       } else if (d.type === 'ready') {
         this.ai = { state: 'ready', text: 'AI ready' };
         this.restartAi();
       } else if (d.type === 'stats') {
-        this.ai = { ...this.ai, state: 'running', realtime: d.realtime, latency: d.latency };
+        this.ai = { ...this.ai, state: 'running', speed: d.realtime, delay: d.latency };
+        this.adaptStep(d.realtime);
       } else if (d.type === 'skip') {
-        this.ai = { ...this.ai, text: 'Your graphics card is falling behind, so the AI skipped ahead. Try a longer step in AI settings.' };
+        this.adaptStep(0);
       } else if (d.type === 'error') {
         this.ai = { state: 'error', text: d.message };
       }
       this.onChange();
     };
-    w.postMessage({ type: 'config', hop: opts.hop ?? 2, margin: opts.margin ?? 0.5 });
-    w.postMessage({ type: 'load', base: opts.base });
+    w.postMessage({ type: 'config', hop: STEPS[this.step], margin: 0.5 });
+    w.postMessage({ type: 'load' });
   }
 
-  configureAi(hop: number) { this.worker?.postMessage({ type: 'config', hop }); this.restartAi(); }
+  /**
+   * If the graphics card can't keep up, separate in longer steps (more delay, less work).
+   * Each step must finish faster than the music plays.
+   */
+  private adaptStep(speed: number) {
+    this.slowCount = speed < 1.1 ? this.slowCount + 1 : 0;
+    if (this.slowCount >= 2 && this.step < STEPS.length - 1) {
+      this.step++; this.slowCount = 0;
+      this.ai = { ...this.ai, slowedDown: true };
+      this.worker?.postMessage({ type: 'config', hop: STEPS[this.step] });
+      this.restartAi();
+    }
+  }
 
   private restartAi() {
-    if (!this.worker || (this.ai.state !== 'ready' && this.ai.state !== 'running')) return;
+    if (!this.worker || this.ai.state === 'loading' || this.ai.state === 'error') return;
     this.player?.port.postMessage({ type: 'reset' });
     this.worker.postMessage({ type: this.source ? 'start' : 'stop' });
     this.tap?.port.postMessage({ on: !!this.source });

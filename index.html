@@ -20,41 +20,27 @@
   <p id="status" class="status" aria-live="polite">Press Share audio and pick a YouTube tab, or your entire screen with "Share system audio" to use Spotify, VLC or any other player.</p>
   <audio id="player" controls hidden></audio>
 
-  <div class="stage"><canvas id="cv" aria-label="Dots that dance to the drums and a face that sings along"></canvas></div>
+  <div class="stage"><canvas id="cv" aria-label="Dots that dance to the music around a face"></canvas></div>
 
   <section class="panel">
-    <div class="modes" role="radiogroup" aria-label="Processing mode">
-      <label><input type="radio" name="mode" value="original" checked /><span><b>Original</b><small>Untouched sound</small></span></label>
-      <label><input type="radio" name="mode" value="instant" /><span><b>Instant</b><small>Fast filter, about 0.2 s delay</small></span></label>
-      <label><input type="radio" name="mode" value="ai" /><span><b>AI</b><small>Clean split, a few seconds delay</small></span></label>
+    <div class="ailine">
+      <div class="aitext">
+        <p id="aistatus" aria-live="polite">Getting the AI ready…</p>
+        <div class="bar" id="aibarwrap" aria-hidden="true"><i id="aibar"></i></div>
+      </div>
+      <span class="info">
+        <button type="button" class="infobtn" aria-describedby="aiinfo" aria-label="About the AI">i</button>
+        <span role="tooltip" id="aiinfo">Runs Meta's open HT-Demucs model on your graphics card. It downloads once (about 126 MB) and is then cached in your browser. Needs Chrome or Edge with WebGPU. Audio never leaves your computer.</span>
+      </span>
     </div>
     <div class="stemhead">
       <h2>Instruments</h2>
       <div class="row"><button id="karaoke" type="button">Karaoke: vocals off</button><button id="allon" type="button">All on</button></div>
     </div>
     <div class="stems" id="stems"></div>
-    <p class="hint">Keys: <kbd>V</kbd> karaoke, <kbd>1</kbd>–<kbd>4</kbd> toggle an instrument, <kbd>O</kbd> <kbd>I</kbd> <kbd>A</kbd> switch mode.</p>
+    <p class="hint">Keys: <kbd>V</kbd> karaoke, <kbd>1</kbd>–<kbd>4</kbd> switch an instrument on or off.</p>
   </section>
-
-  <section class="panel grid2">
-    <div class="card">
-      <h2>AI separation</h2>
-      <p>Runs Meta's open HT-Demucs model on your graphics card. It downloads once (about 126 MB) and is then cached in your browser. Needs Chrome or Edge with WebGPU.</p>
-      <div class="row"><button id="loadai" type="button">Load the AI model</button>
-        <label class="inl">Step <select id="hop"><option value="1">1 s (least delay, fast GPU)</option><option value="2" selected>2 s</option><option value="4">4 s (slow GPU)</option></select></label></div>
-      <div class="bar" aria-hidden="true"><i id="aibar"></i></div>
-      <p id="aistatus" class="small">AI model not loaded yet.</p>
-    </div>
-    <div class="card">
-      <h2>Instant filter</h2>
-      <p>No download and almost no delay. It guesses the parts from the sound itself, so some bleed is normal.</p>
-      <div class="row">
-        <label class="inl">Find vocals by <select id="vmode"><option value="0" selected>the singer's pitch</option><option value="1">everything centred</option></select></label>
-        <label class="inl">Clean-up passes <select id="passes"><option value="0">none</option><option value="1" selected>1</option><option value="2">2</option></select></label>
-      </div>
-    </div>
-  </section>
-  <footer>Audio never leaves your computer. AI model: <a href="https://github.com/facebookresearch/demucs">HT-Demucs</a> by Meta AI (MIT), web build by <a href="https://huggingface.co/monteslu/htdemucs-web-onnx">monteslu</a>.</footer>
+  <footer>AI model: <a href="https://github.com/facebookresearch/demucs">HT-Demucs</a> by Meta AI (MIT), web build by <a href="https://huggingface.co/monteslu/htdemucs-web-onnx">monteslu</a>.</footer>
   <script type="module" src="/src/main.ts"></script>
 </body>
 </html>

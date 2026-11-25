@@ -23,14 +23,13 @@ select { font: 16px Archivo, sans-serif; min-height: 44px; border-radius: 10px; 
 .stage { position: relative; height: min(56vh, 540px); min-height: 300px; margin: 0 max(2vw, 8px); border-radius: 14px; overflow: hidden; background: radial-gradient(120% 90% at 50% 62%, #1d1111 0%, #0a0808 72%); }
 .stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
 .panel { max-width: 1240px; margin: 0 auto; padding: 18px max(4vw, 16px) 0; }
-.modes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-bottom: 16px; }
-.modes label { cursor: pointer; }
-.modes input { position: absolute; opacity: 0; }
-.modes span { display: block; padding: 10px 14px; border-radius: 12px; border: 1px solid var(--line); background: var(--panel); min-height: 64px; }
-.modes b { display: block; font: 700 22px "Big Shoulders Display", sans-serif; }
-.modes small { color: var(--dim); font-size: 13px; }
-.modes input:checked + span { border-color: var(--red); background: #2a1313; }
-.modes input:focus-visible + span { outline: 3px solid #fff; outline-offset: 2px; }
+.ailine { display: flex; gap: 12px; align-items: flex-start; margin-bottom: 18px; }
+.aitext { flex: 1; }
+.aitext p { margin: 0; color: var(--ink); max-width: 80ch; }
+.info { position: relative; flex: none; }
+.infobtn { width: 32px; min-height: 32px; height: 32px; padding: 0; justify-content: center; border-radius: 50%; font: italic 700 16px Georgia, serif; }
+.info [role=tooltip] { position: absolute; right: 0; top: 40px; width: min(320px, 80vw); padding: 12px 14px; border-radius: 10px; background: #221a19; border: 1px solid #3a2d2b; color: var(--ink); font-size: 14px; line-height: 1.45; z-index: 5; opacity: 0; visibility: hidden; transition: opacity .15s; }
+.info:hover [role=tooltip], .info:focus-within [role=tooltip] { opacity: 1; visibility: visible; }
 .stemhead { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-end; gap: 10px; margin-bottom: 10px; }
 .stems { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr)); gap: 12px; }
 .stem { all: unset; cursor: pointer; position: relative; overflow: hidden; border-radius: 12px; border: 1px solid var(--line); background: var(--panel); padding: 14px 16px; min-height: 72px; display: flex; flex-direction: column; justify-content: space-between; }
@@ -43,12 +42,9 @@ select { font: 16px Archivo, sans-serif; min-height: 44px; border-radius: 10px; 
 .stem:focus-visible { outline: 3px solid #fff; outline-offset: 2px; }
 .hint { color: var(--dim); font-size: 13px; }
 kbd { font: 600 12px Archivo, sans-serif; border: 1px solid var(--line); border-radius: 5px; padding: 1px 5px; background: #151111; }
-.grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr)); gap: 16px; }
-.card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; }
-.card p { margin: 0 0 12px; color: var(--dim); font-size: 15px; }
-.card p.small { font-size: 14px; margin: 8px 0 0; }
-.bar { height: 6px; border-radius: 3px; background: #241c1b; margin-top: 12px; overflow: hidden; }
+.bar { height: 6px; border-radius: 3px; background: #241c1b; margin-top: 8px; overflow: hidden; }
+.bar[hidden] { display: none; }
 .bar i { display: block; height: 100%; width: 0; background: var(--red); transition: width .2s; }
 footer { max-width: 1240px; margin: 0 auto; padding: 24px max(4vw, 16px) 32px; color: var(--dim); font-size: 13px; }
-@media (max-width: 600px) { .stage { height: 44vh; } .modes { grid-template-columns: 1fr; } }
+@media (max-width: 600px) { .stage { height: 44vh; } }
 @media (prefers-reduced-motion: reduce) { .stem i, .bar i { transition: none; } }

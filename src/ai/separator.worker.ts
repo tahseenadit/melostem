@@ -25,10 +25,11 @@ let playerPort: MessagePort | null = null;
 const post = (m: unknown, t: Transferable[] = []) => (self as unknown as Worker).postMessage(m, t);
 
 let streamer: Streamer;
+let fromCache = false;
 async function fetchCached(url: string, onBytes: (n: number) => void): Promise<ArrayBuffer> {
   const cache = 'caches' in self ? await caches.open('inmusic-models-v1') : null;
   const hit = cache ? await cache.match(url) : undefined;
-  if (hit) { const b = await hit.arrayBuffer(); onBytes(b.byteLength); return b; }
+  if (hit) { fromCache = true; const b = await hit.arrayBuffer(); onBytes(b.byteLength); return b; }
   const res = await fetch(url);
   if (!res.ok || !res.body) throw new Error(`Download failed (${res.status}) for ${url}`);
   const reader = res.body.getReader(); const parts: Uint8Array[] = []; let n = 0;
@@ -52,7 +53,7 @@ async function load(base: string) {
   sessions = [];
   for (let i = 0; i < pieces.length; i++) {
     const buf = await fetchCached(base + pieces[i].file, (n) => {
-      bytes += n; post({ type: 'progress', phase: 'download', done: bytes, total: approxTotal, piece: i + 1, pieces: pieces.length });
+      bytes += n; post({ type: 'progress', phase: 'download', done: bytes, total: approxTotal, cached: fromCache });
     });
     const ep = i === 0 ? [{ name: 'webgpu', forceCpuNodeNames: CPU_NODES }] : ['webgpu'];
     sessions.push(await ort.InferenceSession.create(buf, {
@@ -96,7 +97,7 @@ streamer = new Streamer(
   separate,
   (data, ms) => {
     playerPort?.postMessage({ type: 'stems', data }, data.map((d) => d.buffer));
-    post({ type: 'stats', ms, realtime: (streamer.hop / 44100 * 1000) / ms, latency: (streamer.hop + streamer.margin) / 44100 + ms / 1000 });
+    post({ type: 'stats', ms, realtime: (streamer.hop / 44100 * 1000) / ms, latency: (streamer.hop + streamer.margin) / 44100 + ms / 1000 + 0.3 }); // + player pre-buffer
   },
   () => post({ type: 'skip' }),
 );
