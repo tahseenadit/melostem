@@ -130,6 +130,30 @@ export class Stage {
     }
   }
 
+  /** Over-ear headphones: a band over the head and two cups over the ears that glow on the beat. */
+  private headphones(cx: number, cy: number, hw: number, hh: number, on: number) {
+    const g = this.g, glow = Math.max(this.flash, this.beat);
+    g.save(); g.shadowBlur = 0;
+    // band
+    g.lineCap = 'round';
+    g.strokeStyle = '#0d0909'; g.lineWidth = hw * 0.11;
+    g.beginPath(); g.moveTo(cx - hw * 1.04, cy - hh * 0.12);
+    g.bezierCurveTo(cx - hw * 1.12, cy - hh * 1.42, cx + hw * 1.12, cy - hh * 1.42, cx + hw * 1.04, cy - hh * 0.12); g.stroke();
+    g.strokeStyle = `rgba(241,226,214,${0.35 * on})`; g.lineWidth = Math.max(1.5, hw * 0.014);
+    g.beginPath(); g.moveTo(cx - hw * 1.0, cy - hh * 0.2);
+    g.bezierCurveTo(cx - hw * 1.06, cy - hh * 1.36, cx + hw * 1.06, cy - hh * 1.36, cx + hw * 1.0, cy - hh * 0.2); g.stroke();
+    // cups
+    for (const s of [-1, 1]) {
+      const x = cx + s * hw * 1.02, y = cy - hh * 0.04, w = hw * 0.26, h = hh * 0.46;
+      g.fillStyle = '#0d0909'; g.beginPath(); g.roundRect(x - w / 2, y - h / 2, w, h, w * 0.45); g.fill();
+      g.strokeStyle = `rgba(227,38,47,${(0.45 + 0.55 * glow) * on})`; g.lineWidth = Math.max(1.5, hw * 0.016);
+      g.shadowColor = 'rgba(227,38,47,.8)'; g.shadowBlur = 6 + glow * 20; g.stroke(); g.shadowBlur = 0;
+      g.fillStyle = `rgba(227,38,47,${(0.15 + 0.6 * glow) * on})`;
+      g.beginPath(); g.ellipse(x + s * w * 0.08, y, w * 0.16, h * 0.28, 0, 0, 7); g.fill();
+    }
+    g.restore();
+  }
+
   /** Face drawn around the middle; the middle dots become its lips. */
   private face(pts: Pt[], y0: number, now: number, cx: number, inp: StageInput) {
     const { W, H, g } = this;
@@ -159,7 +183,7 @@ export class Stage {
     g.bezierCurveTo(cx - hw * 1.05, cy - hh * 1.25, cx + hw * 1.05, cy - hh * 1.25, cx + hw * 0.98, cy - hh * 0.1);
     g.bezierCurveTo(cx + hw * 0.95, cy + hh * 0.55, cx + hw * 0.45, cy + hh * 1.02, cx, cy + hh * 1.02);
     g.bezierCurveTo(cx - hw * 0.45, cy + hh * 1.02, cx - hw * 0.95, cy + hh * 0.55, cx - hw * 0.98, cy - hh * 0.1); g.stroke();
-    for (const s of [-1, 1]) { g.beginPath(); g.moveTo(cx + s * hw * 0.98, cy - hh * 0.22); g.quadraticCurveTo(cx + s * hw * 1.2, cy - hh * 0.05, cx + s * hw * 0.97, cy + hh * 0.18); g.stroke(); }
+    this.headphones(cx, cy, hw, hh, on);
     if (now > this.blinkAt + 0.14) this.blinkAt = now + 2.5 + Math.random() * 3;
     const bl = now > this.blinkAt ? 0.12 : 1, ey = cy - hh * 0.2, ew = hw * 0.24, eh = ew * 0.42 * bl;
     for (const s of [-1, 1]) {

@@ -69,20 +69,64 @@ export class Engine {
   }
 
   // ---------- sources ----------
-  async shareAudio(): Promise<void> {
+  async shareAudio(): Promise<{ surface: string }> {
     await this.ready; await this.ac.resume();
     const stream = await navigator.mediaDevices.getDisplayMedia({
-      video: true,
-      // Chrome: pick a tab, a window or the entire screen with system audio. The tab's own
-      // playback is muted so only the processed sound is heard.
-      audio: { suppressLocalAudioPlayback: true, echoCancellation: false, noiseSuppression: false, autoGainControl: false } as MediaTrackConstraints,
+      // We only want the sound. Keep the picture tiny and slow so screen capture doesn't
+      // compete with the AI for the graphics card.
+      video: { frameRate: 1, width: { max: 320 }, height: { max: 240 } },
+      audio: {
+        suppressLocalAudioPlayback: true, // a shared tab goes quiet; only our processed sound plays
+        restrictOwnAudio: true, // whole-screen sound must not include our own output (feedback loop)
+        echoCancellation: false, noiseSuppression: false, autoGainControl: false,
+      } as MediaTrackConstraints,
       systemAudio: 'include',
+      surfaceSwitching: 'include',
       selfBrowserSurface: 'exclude',
     } as DisplayMediaStreamOptions);
-    if (!stream.getAudioTracks().length) { stream.getTracks().forEach((t) => t.stop()); throw new Error('No audio was shared. Try again and tick "Share tab audio" or "Share system audio".'); }
+    const surface = (stream.getVideoTracks()[0]?.getSettings() as { displaySurface?: string }).displaySurface ?? 'browser';
+    if (!stream.getAudioTracks().length) {
+      stream.getTracks().forEach((t) => t.stop());
+      throw new Error(surface === 'window'
+        ? 'Chrome cannot capture sound from a single window. Share the tab instead, or for apps like Spotify or VLC use "Audio input" with a virtual audio cable.'
+        : surface === 'monitor'
+          ? 'No sound came through. Tick "Share system audio" in the picker. On a Mac this needs macOS 14.2 or newer; otherwise use "Audio input" with a virtual audio cable.'
+          : 'No sound came through. Tick "Share tab audio" in the picker.');
+    }
     stream.getVideoTracks().forEach((t) => (t.enabled = false));
     this.setSource(this.ac.createMediaStreamSource(stream), stream);
     stream.getAudioTracks()[0].addEventListener('ended', () => this.stopSource());
+    return { surface };
+  }
+
+  /** Audio inputs (asks for microphone permission once so device names are visible). */
+  async listInputs(): Promise<MediaDeviceInfo[]> {
+    let devs = await navigator.mediaDevices.enumerateDevices();
+    if (!devs.some((d) => d.kind === 'audioinput' && d.label)) {
+      const s = await navigator.mediaDevices.getUserMedia({ audio: true });
+      s.getTracks().forEach((t) => t.stop());
+      devs = await navigator.mediaDevices.enumerateDevices();
+    }
+    return devs.filter((d) => d.kind === 'audioinput');
+  }
+
+  async listOutputs(): Promise<MediaDeviceInfo[]> {
+    return (await navigator.mediaDevices.enumerateDevices()).filter((d) => d.kind === 'audiooutput');
+  }
+
+  /** Listen to an audio input, e.g. a virtual cable (BlackHole, VB-Cable) that a music app plays into. */
+  async useInput(deviceId: string): Promise<void> {
+    await this.ready; await this.ac.resume();
+    const stream = await navigator.mediaDevices.getUserMedia({
+      audio: { deviceId: { exact: deviceId }, channelCount: 2, echoCancellation: false, noiseSuppression: false, autoGainControl: false },
+    });
+    this.setSource(this.ac.createMediaStreamSource(stream), stream);
+  }
+
+  /** Play the result on a specific output (needed when the system output is a virtual cable). */
+  async setOutput(deviceId: string): Promise<void> {
+    const ac = this.ac as AudioContext & { setSinkId?: (id: string) => Promise<void> };
+    if (ac.setSinkId) await ac.setSinkId(deviceId);
   }
 
   async playFile(el: HTMLMediaElement): Promise<void> {

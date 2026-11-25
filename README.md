@@ -38,9 +38,17 @@ npm test         # STFT round trip + streaming tests
 npm run build
 ```
 
-Use Chrome or Edge. "Share audio" opens the browser's picker: choose a tab and tick
-**Share tab audio**, or choose **Entire screen** and tick **Share system audio**. The shared tab's own
-sound is muted so you only hear the processed version.
+Use Chrome or Edge. There are three ways to feed it music:
+
+- **Share audio, a tab:** pick the tab and tick **Share tab audio**. The tab's own sound is muted,
+  so you only hear the karaoke version. This is the smoothest option for YouTube.
+- **Share audio, entire screen:** tick **Share system audio** (Windows, ChromeOS, macOS 14.2+).
+  inmusic's own output is excluded from the capture, but other apps can't be muted from the
+  browser, so you hear the original as well. Chrome can't capture sound from a single window.
+- **Audio input (any app, clean):** install a virtual audio cable
+  ([BlackHole](https://existential.audio/blackhole/) on macOS, [VB-Cable](https://vb-audio.com/Cable/)
+  on Windows), set the music app's or the system's output to it, then in inmusic choose the cable
+  as input and your real speakers or headphones as output.
 
 ## Layout
 

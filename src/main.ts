@@ -20,8 +20,38 @@ $('allon').onclick = () => engine.stems.forEach((_, i) => engine.setStem(i, true
 // ---------- sources ----------
 const player = $<HTMLAudioElement>('player');
 $('share').onclick = async () => {
-  try { await engine.shareAudio(); stage.reset(); status(''); }
-  catch (e) { status((e as Error).name === 'NotAllowedError' ? 'Sharing was cancelled.' : (e as Error).message); }
+  try {
+    const { surface } = await engine.shareAudio(); stage.reset();
+    status(surface === 'monitor'
+      ? "You're sharing your whole computer's sound. Other apps can't be muted from here, so you'll hear the original song as well. For clean karaoke from apps like Spotify, use Audio input with a virtual audio cable."
+      : '');
+  } catch (e) { status((e as Error).name === 'NotAllowedError' ? 'Sharing was cancelled.' : (e as Error).message); }
+};
+
+// ---------- audio input (virtual cable) ----------
+const opts = (devs: MediaDeviceInfo[], fallback: string) =>
+  devs.map((d, i) => `<option value="${d.deviceId.replace(/"/g, '&quot;')}">${(d.label || `${fallback} ${i + 1}`).replace(/[<&]/g, (c) => (c === '<' ? '&lt;' : '&amp;'))}</option>`).join('');
+$('inbtn').onclick = async () => {
+  const panel = $('inpanel'), open = panel.hidden;
+  panel.hidden = !open; $('inbtn').setAttribute('aria-expanded', String(open));
+  if (!open) return;
+  try {
+    const [ins, outs] = [await engine.listInputs(), await engine.listOutputs()];
+    const sel = $<HTMLSelectElement>('insel');
+    sel.innerHTML = opts(ins, 'Input');
+    const cable = ins.find((d) => /blackhole|cable|loopback|soundflower|virtual/i.test(d.label));
+    if (cable) sel.value = cable.deviceId;
+    $<HTMLSelectElement>('outsel').innerHTML = opts(outs, 'Output');
+    const real = outs.find((d) => d.deviceId === 'default' && !/blackhole|cable/i.test(d.label)) ?? outs.find((d) => !/blackhole|cable|virtual/i.test(d.label));
+    if (real) $<HTMLSelectElement>('outsel').value = real.deviceId;
+  } catch { status('inmusic needs permission to see your audio inputs. Allow it in the address bar and try again.'); }
+};
+$('ingo').onclick = async () => {
+  try {
+    await engine.setOutput($<HTMLSelectElement>('outsel').value);
+    await engine.useInput($<HTMLSelectElement>('insel').value);
+    stage.reset(); status(''); $('inpanel').hidden = true; $('inbtn').setAttribute('aria-expanded', 'false');
+  } catch (e) { status((e as Error).message); }
 };
 $<HTMLInputElement>('file').onchange = async (e) => {
   const f = (e.target as HTMLInputElement).files?.[0]; if (!f) return;

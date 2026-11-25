@@ -13,11 +13,20 @@
     <div><h1>inmusic</h1><p class="tag">Live karaoke for anything playing on your computer</p></div>
     <div class="row">
       <button class="primary" id="share" type="button">Share audio</button>
+      <button id="inbtn" type="button" aria-expanded="false" aria-controls="inpanel">Audio input</button>
       <label class="btn file">Open a file<input type="file" id="file" accept="audio/*,video/*" /></label>
       <button id="stop" type="button" disabled>Stop</button>
     </div>
   </header>
   <p id="status" class="status" aria-live="polite">Press Share audio and pick a YouTube tab, or your entire screen with "Share system audio" to use Spotify, VLC or any other player.</p>
+  <section id="inpanel" class="inpanel" hidden>
+    <p>For music apps outside the browser, like Spotify, VLC or Apple Music: install a free virtual audio cable (<a href="https://existential.audio/blackhole/">BlackHole</a> on a Mac, <a href="https://vb-audio.com/Cable/">VB-Cable</a> on Windows) and set the music app's sound output, or your computer's, to it. Then pick the cable below, and your real speakers or headphones to listen on. Only inmusic's karaoke version reaches your ears.</p>
+    <div class="row">
+      <label class="inl">Listen to <select id="insel"></select></label>
+      <label class="inl">Play on <select id="outsel"></select></label>
+      <button class="primary" id="ingo" type="button">Start</button>
+    </div>
+  </section>
   <audio id="player" controls hidden></audio>
 
   <div class="stage"><canvas id="cv" aria-label="Dots that dance to the music around a face"></canvas></div>
