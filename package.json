@@ -1,0 +1,22 @@
+{
+  "name": "inmusic",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Real-time karaoke maker: switch vocals, drums, bass and other instruments on and off live, for any song playing on your computer.",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "onnxruntime-web": "1.31.1"
+  },
+  "devDependencies": {
+    "@webgpu/types": "^0.1.74",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.8",
+    "vitest": "^5.1.2"
+  }
+}
