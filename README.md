@@ -1,9 +1,9 @@
 # melostem
 
-Live karaoke for anything playing on your computer. Share a YouTube tab, or your whole screen's
-audio to catch Spotify, VLC or any other player, then switch the **vocals, drums, bass and other
-instruments** on and off while the song plays. A line of dots dances to the drums and a face sings
-along.
+Split any song live: sing karaoke, keep the backing track, or just play around. Share a YouTube
+tab, your whole screen's audio, or a virtual audio cable from Spotify, VLC or any other player, then
+switch the **vocals, drums, bass and other instruments** on and off while the song plays. A line of
+dots dances to the music around a face wearing headphones.
 
 ## How it works
 
