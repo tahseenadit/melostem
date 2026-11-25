@@ -51,3 +51,12 @@ footer { max-width: 1240px; margin: 0 auto; padding: 24px max(4vw, 16px) 32px; c
 .inpanel { max-width: 1240px; margin: 0 auto 12px; padding: 14px max(4vw, 16px); }
 .inpanel p { margin: 0 0 10px; color: var(--dim); font-size: 15px; max-width: 90ch; }
 .inpanel[hidden] { display: none; }
+.linkbtn { all: unset; cursor: pointer; color: var(--ink); font-size: 15px; text-decoration: underline; text-underline-offset: 3px; margin-top: 4px; min-height: 32px; display: inline-flex; align-items: center; }
+.linkbtn:focus-visible { outline: 3px solid #fff; outline-offset: 2px; }
+dialog#guide { width: min(860px, 94vw); max-height: 92vh; padding: 18px 20px; border: 1px solid #3a2d2b; border-radius: 14px; background: var(--panel); color: var(--ink); }
+dialog#guide::backdrop { background: rgba(5, 3, 3, .75); }
+.guidehead { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 10px; }
+.close { width: 44px; padding: 0; justify-content: center; }
+dialog#guide video { width: 100%; border-radius: 10px; background: #000; aspect-ratio: 2844 / 1318; }
+dialog#guide ol { margin: 14px 0 8px; padding-left: 22px; line-height: 1.6; }
+dialog#guide .small { color: var(--dim); font-size: 14px; margin: 0; }

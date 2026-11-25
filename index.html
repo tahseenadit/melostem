@@ -10,7 +10,8 @@
 </head>
 <body>
   <header class="top">
-    <div><h1>melostem</h1><p class="tag">Split any song live: sing karaoke, keep the backing track, or just play around</p></div>
+    <div><h1>melostem</h1><p class="tag">Split any song live: sing karaoke, keep the backing track, or just play around</p>
+      <button type="button" class="linkbtn" id="guidebtn">How to share audio</button></div>
     <div class="row">
       <button class="primary" id="share" type="button">Share audio</button>
       <button id="inbtn" type="button" aria-expanded="false" aria-controls="inpanel">Audio input</button>
@@ -49,6 +50,17 @@
     <div class="stems" id="stems"></div>
     <p class="hint">Keys: <kbd>V</kbd> karaoke, <kbd>1</kbd>–<kbd>4</kbd> switch an instrument on or off.</p>
   </section>
+  <dialog id="guide" aria-labelledby="guidetitle">
+    <div class="guidehead"><h2 id="guidetitle">How to share audio</h2><button type="button" class="close" id="guideclose" aria-label="Close">✕</button></div>
+    <video src="/guide/share-audio.mp4" poster="/guide/share-audio.jpg" controls muted loop playsinline preload="none"></video>
+    <ol>
+      <li>Start your song on YouTube, in its own tab.</li>
+      <li>Come back to melostem and press <b>Share audio</b>.</li>
+      <li>In the picker, open <b>Chrome tab</b>, choose the YouTube tab, keep <b>Share with tab audio</b> on, and press <b>Share with audio</b>.</li>
+      <li>Give the AI a few seconds to start, then switch the vocals, drums, bass and other parts on or off.</li>
+    </ol>
+    <p class="small">The YouTube tab goes quiet while it's shared, so you only hear melostem's version. To stop, press <b>Stop</b> or <b>Stop sharing</b> at the top of the browser.</p>
+  </dialog>
   <footer>AI model: <a href="https://github.com/facebookresearch/demucs">HT-Demucs</a> by Meta AI (MIT), web build by <a href="https://huggingface.co/monteslu/htdemucs-web-onnx">monteslu</a>.</footer>
   <script type="module" src="/src/main.ts"></script>
 </body>

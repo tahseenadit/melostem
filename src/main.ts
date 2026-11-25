@@ -28,6 +28,13 @@ $('share').onclick = async () => {
   } catch (e) { status((e as Error).name === 'NotAllowedError' ? 'Sharing was cancelled.' : (e as Error).message); }
 };
 
+// ---------- how-to guide ----------
+const guide = $<HTMLDialogElement>('guide'), guideVideo = guide.querySelector('video')!;
+$('guidebtn').onclick = () => { guide.showModal(); guideVideo.play().catch(() => {}); };
+$('guideclose').onclick = () => guide.close();
+guide.addEventListener('close', () => guideVideo.pause());
+guide.addEventListener('click', (e) => { if (e.target === guide) guide.close(); }); // click outside closes
+
 // ---------- audio input (virtual cable) ----------
 const opts = (devs: MediaDeviceInfo[], fallback: string) =>
   devs.map((d, i) => `<option value="${d.deviceId.replace(/"/g, '&quot;')}">${(d.label || `${fallback} ${i + 1}`).replace(/[<&]/g, (c) => (c === '<' ? '&lt;' : '&amp;'))}</option>`).join('');
