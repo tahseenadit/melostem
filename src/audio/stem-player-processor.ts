@@ -69,4 +69,4 @@ class StemPlayer extends AudioWorkletProcessor {
   }
 }
 
-registerProcessor('inmusic-stem-player', StemPlayer);
+registerProcessor('melostem-stem-player', StemPlayer);

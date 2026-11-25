@@ -54,9 +54,9 @@ export class Engine {
 
   private async init() {
     await Promise.all([tapUrl, playerUrl].map((u) => this.ac.audioWorklet.addModule(u)));
-    this.tap = new AudioWorkletNode(this.ac, 'inmusic-tap', { numberOfOutputs: 0 });
+    this.tap = new AudioWorkletNode(this.ac, 'melostem-tap', { numberOfOutputs: 0 });
     this.input.connect(this.tap);
-    this.player = new AudioWorkletNode(this.ac, 'inmusic-stem-player', { numberOfInputs: 0, outputChannelCount: [2] });
+    this.player = new AudioWorkletNode(this.ac, 'melostem-stem-player', { numberOfInputs: 0, outputChannelCount: [2] });
     this.player.connect(this.out);
     this.player.port.onmessage = (e) => {
       if (e.data.type !== 'level') return;
@@ -131,9 +131,9 @@ export class Engine {
 
   async playFile(el: HTMLMediaElement): Promise<void> {
     await this.ready; await this.ac.resume();
-    const anyEl = el as HTMLMediaElement & { _inmusic?: MediaElementAudioSourceNode };
-    anyEl._inmusic ??= this.ac.createMediaElementSource(el);
-    this.setSource(anyEl._inmusic);
+    const anyEl = el as HTMLMediaElement & { _melostem?: MediaElementAudioSourceNode };
+    anyEl._melostem ??= this.ac.createMediaElementSource(el);
+    this.setSource(anyEl._melostem);
   }
 
   private setSource(node: AudioNode, stream?: MediaStream) {

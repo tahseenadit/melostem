@@ -44,7 +44,7 @@ $('inbtn').onclick = async () => {
     $<HTMLSelectElement>('outsel').innerHTML = opts(outs, 'Output');
     const real = outs.find((d) => d.deviceId === 'default' && !/blackhole|cable/i.test(d.label)) ?? outs.find((d) => !/blackhole|cable|virtual/i.test(d.label));
     if (real) $<HTMLSelectElement>('outsel').value = real.deviceId;
-  } catch { status('inmusic needs permission to see your audio inputs. Allow it in the address bar and try again.'); }
+  } catch { status('melostem needs permission to see your audio inputs. Allow it in the address bar and try again.'); }
 };
 $('ingo').onclick = async () => {
   try {

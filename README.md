@@ -1,4 +1,4 @@
-# inmusic
+# melostem
 
 Live karaoke for anything playing on your computer. Share a YouTube tab, or your whole screen's
 audio to catch Spotify, VLC or any other player, then switch the **vocals, drums, bass and other
@@ -43,11 +43,11 @@ Use Chrome or Edge. There are three ways to feed it music:
 - **Share audio, a tab:** pick the tab and tick **Share tab audio**. The tab's own sound is muted,
   so you only hear the karaoke version. This is the smoothest option for YouTube.
 - **Share audio, entire screen:** tick **Share system audio** (Windows, ChromeOS, macOS 14.2+).
-  inmusic's own output is excluded from the capture, but other apps can't be muted from the
+  melostem's own output is excluded from the capture, but other apps can't be muted from the
   browser, so you hear the original as well. Chrome can't capture sound from a single window.
 - **Audio input (any app, clean):** install a virtual audio cable
   ([BlackHole](https://existential.audio/blackhole/) on macOS, [VB-Cable](https://vb-audio.com/Cable/)
-  on Windows), set the music app's or the system's output to it, then in inmusic choose the cable
+  on Windows), set the music app's or the system's output to it, then in melostem choose the cable
   as input and your real speakers or headphones as output.
 
 ## Layout

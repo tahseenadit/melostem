@@ -27,8 +27,11 @@ const post = (m: unknown, t: Transferable[] = []) => (self as unknown as Worker)
 let streamer: Streamer;
 let fromCache = false;
 async function fetchCached(url: string, onBytes: (n: number) => void): Promise<ArrayBuffer> {
-  const cache = 'caches' in self ? await caches.open('inmusic-models-v1') : null;
-  const hit = cache ? await cache.match(url) : undefined;
+  const cache = 'caches' in self ? await caches.open('melostem-models-v1') : null;
+  // models cached under the app's former name (inmusic) are reused instead of downloaded again
+  const legacy = 'caches' in self && (await caches.has('inmusic-models-v1')) ? await caches.open('inmusic-models-v1') : null;
+  let hit = cache ? await cache.match(url) : undefined;
+  if (!hit && legacy) { hit = await legacy.match(url); if (hit && cache) await cache.put(url, hit.clone()); }
   if (hit) { fromCache = true; const b = await hit.arrayBuffer(); onBytes(b.byteLength); return b; }
   const res = await fetch(url);
   if (!res.ok || !res.body) throw new Error(`Download failed (${res.status}) for ${url}`);

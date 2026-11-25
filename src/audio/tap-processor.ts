@@ -37,4 +37,4 @@ class TapProcessor extends AudioWorkletProcessor {
   }
 }
 
-registerProcessor('inmusic-tap', TapProcessor);
+registerProcessor('melostem-tap', TapProcessor);
